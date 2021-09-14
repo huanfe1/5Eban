@@ -9,7 +9,7 @@ import os
 import requests
 import json
 
-url = 'https://arena.5eplay.com/data/player/7132912j9dckv'
+url = '-------玩家战绩地址-------'
 uid = os.path.basename(url)
 
 
