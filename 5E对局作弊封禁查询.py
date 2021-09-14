@@ -1,69 +1,50 @@
-import urllib
-import requests
-import re
-import webbrowser
-import json
+# -*- coding:utf-8 -*-
+
+"""
+时间:2021年09月14日
+作者:幻非
+"""
+
 import os
+import requests
+import json
+
+url = 'https://arena.5eplay.com/data/player/7132912j9dckv'
+uid = os.path.basename(url)
 
 
-
-def pages(uid,p):#变化网址页数
-	url = "https://www.5ewin.com/api/data/match_list/" + uid + "?yyyy=2020&page=" + p
-	return(url)
-
-
-def get(url,i): #i表示第10场内的第几场
-	response = urllib.request.urlopen(url)
-	getdata = response.read().decode('utf-8')
-	timename = json.loads(getdata)["data"][i]["match_code"]
-	return(timename)
+games_list = []
+i = 1
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                  'Chrome/92.0.4515.159 Safari/537.36 '
+}
 
 
-def findnumber(url): #检测该10场数据是否少于10场
-	response = urllib.request.urlopen(url)
-	getdata = response.read().decode('utf-8')
-	sub = "match_code"
-	num = getdata.count(sub)#number正常为10
-	return(num)
+# 输入用户ID,输出比赛地址列表
+def pages(self):
+    global i
+    page_url = "https://arena.5eplay.com/api/data/match_list/" + self + "?page=" + str(i)
+    response = json.loads(requests.get(url=page_url, headers=headers).text)
+    page_bool = response["success"]
+    # print(page_url)
+    if page_bool:
+        for page in response['data']:
+            games_list.append('https://arena.5eplay.com/data/match/' + page['match_code'])
+        i = i + 1
+        pages(self)
+    else:
+        print("战绩查询完毕,开始检测封禁玩家")
+    return games_list
 
 
-def search(url):
-	response = urllib.request.urlopen(url)
-	#print("代码：",response.getcode())#代码如果是200表示获取成功
-	getdata = response.read().decode('utf-8')
-	#ban1 = "ban-type1" #违规行为封禁
-	#ban3 = "ban-type3" #非法行为冻结
-	#ban4 = "ban-type4" #作弊封禁
-	ban = "ban-type4"
-	searchresult = getdata.find(ban)
-	#print(searchresult)
-	if searchresult != -1:
-		return(url)
+# 检测战绩页面是否含有封禁玩家
+def check(self):
+    for game_url in self:
+        ban = requests.get(url=game_url, headers=headers).text
+        if ban.find('ban-type') != -1:
+            print(game_url)
 
 
+check(pages(uid))
 
-userall = input("请输入5E玩家地址:")
-
-
-reg = r'https://www.5ewin.com/data/player/(.*)'
-imgre = re.compile(reg)
-userid = ''.join(re.findall(imgre,userall))
-
-page = 1
-i = 0
-for x in range(10):
-	allpage = pages(userid,str(page))#获取到的总体战绩页
-	page = page + 1
-	number = findnumber(allpage)
-	if number == 0: #检测剩余战绩是否为零
-		break
-	#print(allpage)
-	for i in range(number):
-		data = get(allpage,i)
-		data = "https://www.5ewin.com/data/match/" + data
-		#print(data)
-		i + 1
-		banwz = search(data)
-		if banwz != None:
-			print(banwz)
-input("按任意键退出")
